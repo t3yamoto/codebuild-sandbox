@@ -1,0 +1,148 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'AWS CloudFormation Template for Sandbox CodeBuild Project'
+
+Parameters:
+  ProjectName:
+    Type: String
+    Default: codebuild-sandbox
+    Description: Name of the CodeBuild project.
+  BuildImage:
+    Type: String
+    Default: EC2.x86-64.AL2
+    Description: The build image for the project.
+    AllowedValues:
+      - EC2.x86-64.AL2
+      - EC2.x86-64.Java
+      - EC2.x86-64.Ubuntu
+      - EC2.arm64.AL2
+      - Lambda.x86-64.Java
+      - Lambda.x86-64.NET
+      - Lambda.x86-64.Go
+      - Lambda.x86-64.Node
+      - Lambda.x86-64.Python
+      - Lambda.x86-64.Ruby
+      - Lambda.arm64.Java
+      - Lambda.arm64.NET
+      - Lambda.arm64.Go
+      - Lambda.arm64.Node
+      - Lambda.arm64.Python
+      - Lambda.arm64.Ruby
+
+Mappings:
+  Environment:
+    EC2.x86-64.AL2:
+      Type: LINUX_CONTAINER
+      BuildImage: aws/codebuild/amazonlinux2-x86_64-standard:5.0
+      ComputeType: BUILD_GENERAL1_SMALL
+      PrivilegedMode: true
+    EC2.x86-64.Java:
+      Type: LINUX_CONTAINER
+      BuildImage: aws/codebuild/amazonlinux2-x86_64-standard:corretto11
+      ComputeType: BUILD_GENERAL1_SMALL
+      PrivilegedMode: true
+    EC2.x86-64.Ubuntu:
+      Type: LINUX_CONTAINER
+      BuildImage: aws/codebuild/standard:7.0
+      ComputeType: BUILD_GENERAL1_SMALL
+      PrivilegedMode: true
+    EC2.arm64.AL2:
+      Type: ARM_CONTAINER
+      BuildImage: aws/codebuild/amazonlinux2-aarch64-standard:3.0
+      ComputeType: BUILD_GENERAL1_SMALL
+      PrivilegedMode: true
+    Lambda.x86-64.Java:
+      Type: LINUX_LAMBDA_CONTAINER
+      BuildImage: aws/codebuild/amazonlinux-x86_64-lambda-standard:corretto21
+      ComputeType: BUILD_LAMBDA_4GB
+      PrivilegedMode: false
+    Lambda.x86-64.NET:
+      Type: LINUX_LAMBDA_CONTAINER
+      BuildImage: aws/codebuild/amazonlinux-x86_64-lambda-standard:dotnet6
+      ComputeType: BUILD_LAMBDA_4GB
+      PrivilegedMode: false
+    Lambda.x86-64.Go:
+      Type: LINUX_LAMBDA_CONTAINER
+      BuildImage: aws/codebuild/amazonlinux-x86_64-lambda-standard:go1.21
+      ComputeType: BUILD_LAMBDA_4GB
+      PrivilegedMode: false
+    Lambda.x86-64.Node:
+      Type: LINUX_LAMBDA_CONTAINER
+      BuildImage: aws/codebuild/amazonlinux-x86_64-lambda-standard:nodejs20
+      ComputeType: BUILD_LAMBDA_4GB
+      PrivilegedMode: false
+    Lambda.x86-64.Python:
+      Type: LINUX_LAMBDA_CONTAINER
+      BuildImage: aws/codebuild/amazonlinux-x86_64-lambda-standard:python3.12
+      ComputeType: BUILD_LAMBDA_4GB
+      PrivilegedMode: false
+    Lambda.x86-64.Ruby:
+      Type: LINUX_LAMBDA_CONTAINER
+      BuildImage: aws/codebuild/amazonlinux-x86_64-lambda-standard:ruby3.2
+      ComputeType: BUILD_LAMBDA_4GB
+      PrivilegedMode: false
+    Lambda.arm64.Java:
+      Type: ARM_LAMBDA_CONTAINER
+      BuildImage: aws/codebuild/amazonlinux-aarch64-lambda-standard:corretto21
+      ComputeType: BUILD_LAMBDA_4GB
+      PrivilegedMode: false
+    Lambda.arm64.NET:
+      Type: ARM_LAMBDA_CONTAINER
+      BuildImage: aws/codebuild/amazonlinux-aarch64-lambda-standard:dotnet6
+      ComputeType: BUILD_LAMBDA_4GB
+      PrivilegedMode: false
+    Lambda.arm64.Go:
+      Type: ARM_LAMBDA_CONTAINER
+      BuildImage: aws/codebuild/amazonlinux-aarch64-lambda-standard:go1.21
+      ComputeType: BUILD_LAMBDA_4GB
+      PrivilegedMode: false
+    Lambda.arm64.Node:
+      Type: ARM_LAMBDA_CONTAINER
+      BuildImage: aws/codebuild/amazonlinux-aarch64-lambda-standard:nodejs20
+      ComputeType: BUILD_LAMBDA_4GB
+      PrivilegedMode: false
+    Lambda.arm64.Python:
+      Type: ARM_LAMBDA_CONTAINER
+      BuildImage: aws/codebuild/amazonlinux-aarch64-lambda-standard:python3.12
+      ComputeType: BUILD_LAMBDA_4GB
+      PrivilegedMode: false
+    Lambda.arm64.Ruby:
+      Type: ARM_LAMBDA_CONTAINER
+      BuildImage: aws/codebuild/amazonlinux-aarch64-lambda-standard:ruby3.2
+      ComputeType: BUILD_LAMBDA_4GB
+      PrivilegedMode: false
+
+Resources:
+  CodeBuildServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: [codebuild.amazonaws.com]
+            Action: ['sts:AssumeRole']
+      Path: "/service-role/"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/PowerUserAccess
+
+  CodeBuildProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: !Ref ProjectName
+      ServiceRole: !GetAtt CodeBuildServiceRole.Arn
+      Artifacts:
+        Type: NO_ARTIFACTS
+      Source:
+        Type: NO_SOURCE
+        BuildSpec: |
+          version: 0.2
+          phases:
+            build:
+              commands:
+                - codebuild-breakpoint
+      Environment:
+        Type: !FindInMap [Environment, !Ref BuildImage, Type]
+        Image: !FindInMap [Environment, !Ref BuildImage, BuildImage]
+        ComputeType: !FindInMap [Environment, !Ref BuildImage, ComputeType]
+        PrivilegedMode: !FindInMap [Environment, !Ref BuildImage, PrivilegedMode]
