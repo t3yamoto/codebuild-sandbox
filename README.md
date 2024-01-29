@@ -1,5 +1,7 @@
 # codebuild-sandbox
 
+![architecture](assets/architecture.drawio.png)
+
 buildspec.yml 作成のためのコマンド試行環境を用意する CloudFormation テンプレートです。
 
 ## スタック作成
